@@ -93,4 +93,12 @@ export const ALIASES: Record<string, string[]> = {
   rating: ["rating", "stars", "star_rating", "score", "review_rating"],
   review_text: ["review_text", "review", "text", "comment", "content", "body"],
   product_url: ["product_url", "url", "listing_url", "source_url"],
+  root_cause: [
+    "root_cause",
+    "root cause",
+    "category",
+    "issue_type",
+    "issue_category",
+    "pain_point_type",
+  ],
 };

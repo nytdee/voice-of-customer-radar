@@ -7,6 +7,12 @@ import {
   REQUIRED_COLUMNS,
 } from "./taxonomy";
 import { formatDateISO } from "./dates";
+import {
+  classifyRootCause,
+  normalizeRootCause,
+  tagRootCause,
+  type RootCause,
+} from "./rootCause";
 
 export interface RawReview {
   [key: string]: unknown;
@@ -23,6 +29,8 @@ export interface Review {
   sentiment: "Negative" | "Positive" | "Mixed / neutral";
   issues: string[];
   issue_count: number;
+  root_cause: RootCause | null;
+  root_cause_tag: string;
 }
 
 export interface PeriodSummary {
@@ -135,11 +143,10 @@ export function normalizeColumns(input: RawReview[]): Review[] {
   const asStr = (v: unknown): string =>
     v === null || v === undefined ? "" : String(v).trim();
 
-  const computed: Record<number, string> = {};
+  const computed: string[] = [];
   const normalized: Review[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  for (const row of rows) {
     const review_date = parseDate(row["review_date"]);
     const rating = parseRating(row["rating"]);
     const product = asStr(row["product"]);
@@ -171,8 +178,14 @@ export function normalizeColumns(input: RawReview[]): Review[] {
       }
       dedupeKey = Math.abs(hash).toString(16).slice(0, 20);
     }
-    computed[i] = dedupeKey;
 
+    const sentiment = classifySentiment(review_text, rating);
+    const issues = classifyIssues(review_text);
+    const root_cause =
+      normalizeRootCause(row["root_cause"]) ??
+      classifyRootCause(review_text, issues, sentiment);
+
+    computed.push(dedupeKey);
     normalized.push({
       review_id,
       review_date,
@@ -181,9 +194,11 @@ export function normalizeColumns(input: RawReview[]): Review[] {
       rating,
       review_text,
       product_url,
-      sentiment: "Mixed / neutral",
-      issues: [],
-      issue_count: 0,
+      sentiment,
+      issues,
+      issue_count: issues.length,
+      root_cause,
+      root_cause_tag: tagRootCause(root_cause),
     });
   }
 
@@ -197,11 +212,7 @@ export function normalizeColumns(input: RawReview[]): Review[] {
 
   deduped.sort((a, b) => a.review_date.getTime() - b.review_date.getTime());
 
-  return deduped.map((r) => ({
-    ...r,
-    sentiment: classifySentiment(r.review_text, r.rating),
-    issues: classifyIssues(r.review_text),
-  })) as Review[];
+  return deduped;
 }
 
 export function classifyIssues(text: string): string[] {
@@ -224,13 +235,7 @@ export function classifySentiment(text: string, rating: number): Review["sentime
 }
 
 export function enrichReviews(input: RawReview[]): Review[] {
-  const normalized = normalizeColumns(input);
-  return normalized.map((r) => ({
-    ...r,
-    sentiment: classifySentiment(r.review_text, r.rating),
-    issues: classifyIssues(r.review_text),
-    issue_count: classifyIssues(r.review_text).length,
-  }));
+  return normalizeColumns(input);
 }
 
 function periodSummary(sub: Review[]): PeriodSummary {

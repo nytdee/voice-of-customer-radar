@@ -6,6 +6,11 @@ import type { AnalysisResult } from "@/lib/analysis";
 import type { NavContext, ViewKey } from "@/lib/nav";
 import { renderHtmlReport, renderMarkdownReport } from "@/lib/reports";
 import { toCsv } from "@/lib/csv";
+import {
+  buildPlatformMatrix,
+  buildQuickWins,
+  buildRootCauseDiagnostic,
+} from "@/lib/diagnostics";
 import { StatCard } from "./StatCard";
 import { BarChart } from "./BarChart";
 import { DonutChart } from "./DonutChart";
@@ -13,6 +18,9 @@ import { ProductCard } from "./ProductCard";
 import { TopIssues } from "./TopIssues";
 import { IssueTable } from "./IssueTable";
 import { ReportDownload } from "./ReportDownload";
+import { QuickWins } from "./QuickWins";
+import { RootCauseDiagnostic } from "./RootCauseDiagnostic";
+import { PlatformMatrix } from "./PlatformMatrix";
 
 function fmtDate(d: Date) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -60,6 +68,10 @@ export function OverviewView({
       html: renderHtmlReport(analysis),
     };
   }, [analysis]);
+
+  const rootCause = useMemo(() => buildRootCauseDiagnostic(analysis), [analysis]);
+  const matrix = useMemo(() => buildPlatformMatrix(analysis), [analysis]);
+  const quickWins = useMemo(() => buildQuickWins(analysis), [analysis]);
 
   const cur = analysis.overall_current;
   const prev = analysis.overall_previous;
@@ -118,6 +130,8 @@ export function OverviewView({
         </div>
       </div>
 
+      <QuickWins wins={quickWins} onNavigate={onNavigate} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           icon={FileText}
@@ -158,6 +172,9 @@ export function OverviewView({
           onClick={() => onNavigate("reviews")}
         />
       </div>
+
+      <RootCauseDiagnostic diagnostic={rootCause} onNavigate={onNavigate} />
+      <PlatformMatrix matrix={matrix} onNavigate={onNavigate} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">

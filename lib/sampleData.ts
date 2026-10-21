@@ -1,4 +1,6 @@
 import { parseCsv } from "./csv";
+import { classifyIssues, classifySentiment } from "./analysis";
+import { classifyRootCause } from "./rootCause";
 
 export const SAMPLE_REVIEWS_CSV = `review_id,review_date,product,platform,rating,review_text,product_url,data_origin
 SYN-0001,2026-10-07,Aero Cabin Case,Myntra (simulated),2,The pull handle feels loose and the wheels do not roll smoothly.,,SYNTHETIC DEMO DATA — not collected from real customers
@@ -181,5 +183,15 @@ SYN-0177,2026-10-14,Daytrip Tote,Zepto (simulated),3,"The size is acceptable, th
 `;
 
 export function parseSampleCsv(csvText: string): Array<Record<string, string>> {
-  return parseCsv(csvText);
+  return parseCsv(csvText).map((row) => {
+    const rating = Number(row.rating);
+    if (!Number.isFinite(rating)) return row;
+    const sentiment = classifySentiment(row.review_text, rating);
+    const issues = classifyIssues(row.review_text);
+    const category =
+      sentiment === "Positive"
+        ? ""
+        : classifyRootCause(row.review_text, issues, sentiment) ?? "";
+    return { ...row, category };
+  });
 }

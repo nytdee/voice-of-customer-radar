@@ -1,3 +1,5 @@
+import type { RootCause } from "./rootCause";
+
 export type ViewKey =
   | "overview"
   | "insights"
@@ -11,5 +13,6 @@ export interface NavContext {
   platform?: string;
   sentiment?: string;
   issue?: string;
+  rootCause?: RootCause;
   query?: string;
 }

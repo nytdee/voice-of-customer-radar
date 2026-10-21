@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type { AnalysisResult } from "@/lib/analysis";
 import type { NavContext } from "@/lib/nav";
+import type { RootCause } from "@/lib/rootCause";
 import { formatDateISO } from "@/lib/dates";
 
 const PAGE_SIZE = 15;
@@ -13,6 +14,16 @@ function sentimentClass(s: string) {
   if (s === "Positive") return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
   return "text-amber-400 bg-amber-500/10 border-amber-500/20";
 }
+
+function rootCauseClass(cause: RootCause) {
+  if (cause === "PRODUCT_DEFECT") return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+  return "text-sky-400 bg-sky-500/10 border-sky-500/20";
+}
+
+const ROOT_CAUSE_LABELS: Record<RootCause, string> = {
+  PRODUCT_DEFECT: "Product defect",
+  OPERATIONAL_ERROR: "Operational error",
+};
 
 export function ReviewsView({
   analysis,
@@ -25,6 +36,7 @@ export function ReviewsView({
   const [platform, setPlatform] = useState(initial?.platform ?? "all");
   const [sentiment, setSentiment] = useState(initial?.sentiment ?? "all");
   const [issue, setIssue] = useState(initial?.issue ?? "all");
+  const [rootCause, setRootCause] = useState(initial?.rootCause ?? "all");
   const [query, setQuery] = useState(initial?.query ?? "");
   const [page, setPage] = useState(0);
 
@@ -40,6 +52,13 @@ export function ReviewsView({
     () => Array.from(new Set(analysis.reviews.flatMap((r) => r.issues))).sort(),
     [analysis]
   );
+  const rootCauses = useMemo(
+    () =>
+      Array.from(
+        new Set(analysis.reviews.map((r) => r.root_cause).filter(Boolean) as RootCause[])
+      ).sort() as RootCause[],
+    [analysis]
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -48,9 +67,10 @@ export function ReviewsView({
       .filter((r) => (platform === "all" ? true : r.platform === platform))
       .filter((r) => (sentiment === "all" ? true : r.sentiment === sentiment))
       .filter((r) => (issue === "all" ? true : r.issues.includes(issue)))
+      .filter((r) => (rootCause === "all" ? true : r.root_cause === rootCause))
       .filter((r) => (q ? r.review_text.toLowerCase().includes(q) : true))
       .sort((a, b) => b.review_date.getTime() - a.review_date.getTime());
-  }, [analysis, product, platform, sentiment, issue, query]);
+  }, [analysis, product, platform, sentiment, issue, rootCause, query]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -61,6 +81,7 @@ export function ReviewsView({
     setPlatform("all");
     setSentiment("all");
     setIssue("all");
+    setRootCause("all");
     setQuery("");
     setPage(0);
   };
@@ -70,6 +91,7 @@ export function ReviewsView({
     platform !== "all" ? platform : null,
     sentiment !== "all" ? sentiment : null,
     issue !== "all" ? issue : null,
+    rootCause !== "all" ? rootCause : null,
   ].filter(Boolean);
 
   const selectClass =
@@ -106,7 +128,7 @@ export function ReviewsView({
       </div>
 
       <div className="glass glass-border rounded-2xl p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="relative md:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
@@ -177,6 +199,21 @@ export function ReviewsView({
             <option value="Mixed / neutral">Mixed / neutral</option>
             <option value="Positive">Positive</option>
           </select>
+          <select
+            value={rootCause}
+            onChange={(e) => {
+              setRootCause(e.target.value === "all" ? "all" : (e.target.value as RootCause));
+              setPage(0);
+            }}
+            className={selectClass}
+          >
+            <option value="all">All root causes</option>
+            {rootCauses.map((rc) => (
+              <option key={rc} value={rc}>
+                {ROOT_CAUSE_LABELS[rc]}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -208,6 +245,14 @@ export function ReviewsView({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-300 text-xs min-w-[260px]">
+                    {r.root_cause && (
+                      <span
+                        className={`mr-1.5 inline-flex text-[9px] font-semibold px-1.5 py-0.5 rounded border font-mono ${rootCauseClass(r.root_cause)}`}
+                        title={ROOT_CAUSE_LABELS[r.root_cause]}
+                      >
+                        {r.root_cause_tag}
+                      </span>
+                    )}
                     {r.review_text}
                     <div className="mt-1 flex flex-wrap gap-1">
                       {r.issues.map((issue) => (
@@ -248,8 +293,8 @@ export function ReviewsView({
             >
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
         </div>
+      </div>
       </div>
     </div>
   );
