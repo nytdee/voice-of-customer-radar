@@ -7,6 +7,7 @@ import {
   Search,
   Sparkles,
   Upload,
+  PlugZap,
   RotateCcw,
 } from "lucide-react";
 import type { ViewKey } from "@/lib/nav";
@@ -18,6 +19,7 @@ const items: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }
   { key: "reviews", label: "Reviews", icon: FileText },
   { key: "discovery", label: "Discovery", icon: Search },
   { key: "upload", label: "Upload data", icon: Upload },
+  { key: "integrations", label: "Integrations", icon: PlugZap },
 ];
 
 interface SidebarProps {

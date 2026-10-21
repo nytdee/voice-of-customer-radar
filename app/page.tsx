@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import type { NavContext, ViewKey } from "@/lib/nav";
 import Header from "@/components/Header";
@@ -10,8 +10,11 @@ import { ProductsView } from "@/components/ProductsView";
 import { ReviewsView } from "@/components/ReviewsView";
 import { UploadView } from "@/components/UploadView";
 import { DiscoveryView } from "@/components/DiscoveryView";
+import { IntegrationsView } from "@/components/IntegrationsView";
 import { analyzeReviews } from "@/lib/analysis";
 import type { AnalysisResult } from "@/lib/analysis";
+import type { ConnectedChannel, MarketplaceId, MarketplaceSyncResult } from "@/lib/integrations";
+import { marketplaceDisplayLabel } from "@/lib/integrations";
 import { parseSampleCsv, SAMPLE_REVIEWS_CSV } from "@/lib/sampleData";
 
 function fmt(d: Date) {
@@ -21,24 +24,81 @@ function fmt(d: Date) {
 export default function Dashboard() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [sourceLabel, setSourceLabel] = useState("Included synthetic sample dataset");
+  const [sourceLabels, setSourceLabels] = useState<string[]>([
+    "Included synthetic sample dataset",
+  ]);
   const [view, setView] = useState<ViewKey>("overview");
   const [nav, setNav] = useState<NavContext>({});
   const [error, setError] = useState<string | null>(null);
+  const [connections, setConnections] = useState<
+    Partial<Record<MarketplaceId, ConnectedChannel>>
+  >({});
+  const rowsRef = useRef<Array<Record<string, unknown>>>([]);
 
   const go = (next: ViewKey, context: NavContext = {}) => {
     setNav(context);
     setView(next);
   };
 
+  const applyRows = useCallback(
+    (rows: Array<Record<string, unknown>>, labels: string[]) => {
+      rowsRef.current = rows;
+      setAnalysis(analyzeReviews(rows));
+      setSourceLabels(labels);
+      setSourceLabel(labels.join(" + "));
+      setError(null);
+    },
+    []
+  );
+
   const loadSample = useCallback(() => {
     try {
-      setAnalysis(analyzeReviews(parseSampleCsv(SAMPLE_REVIEWS_CSV)));
-      setSourceLabel("Included synthetic sample dataset");
-      setError(null);
+      applyRows(parseSampleCsv(SAMPLE_REVIEWS_CSV), ["Included synthetic sample dataset"]);
+      setConnections({});
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to analyse the sample dataset.");
     }
-  }, []);
+  }, [applyRows]);
+
+  const replaceDataset = useCallback(
+    (rows: Array<Record<string, unknown>>, label: string, nextView: ViewKey = "overview") => {
+      try {
+        applyRows(rows, [label]);
+        setView(nextView);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to analyse that dataset.");
+      }
+    },
+    [applyRows]
+  );
+
+  const handleSynced = useCallback(
+    (result: MarketplaceSyncResult) => {
+      try {
+        rowsRef.current = [
+          ...rowsRef.current,
+          ...result.rows.map((row): Record<string, unknown> => ({ ...row })),
+        ];
+        applyRows(rowsRef.current, [
+          ...sourceLabels,
+          `${marketplaceDisplayLabel(result.platform)} sync (demo)`,
+        ]);
+        setConnections((prev) => ({
+          ...prev,
+          [result.platform]: {
+            platform: result.platform,
+            targets: result.targets,
+            reviewCount: result.reviewCount,
+            connectedAtIso: result.fetchedAtIso,
+          },
+        }));
+        setView("overview");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Marketplace sync analysis failed.");
+      }
+    },
+    [applyRows, sourceLabels]
+  );
 
   useEffect(() => {
     loadSample();
@@ -46,7 +106,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
-    if (["overview", "insights", "products", "reviews", "upload", "discovery"].includes(hash)) {
+    if (
+      ["overview", "insights", "products", "reviews", "upload", "discovery", "integrations"].includes(
+        hash
+      )
+    ) {
       setView(hash as ViewKey);
     }
   }, []);
@@ -115,22 +179,18 @@ export default function Dashboard() {
               <UploadView
                 analysis={analysis}
                 sourceLabel={sourceLabel}
-                onLoaded={(next, label) => {
-                  setAnalysis(next);
-                  setSourceLabel(label);
-                  setError(null);
-                  setView("overview");
-                }}
+                onLoaded={(rows, label) => replaceDataset(rows, label)}
               />
             )}
             {view === "discovery" && (
               <DiscoveryView
-                onAnalyse={(next, label) => {
-                  setAnalysis(next);
-                  setSourceLabel(label);
-                  setError(null);
-                  setView("overview");
-                }}
+                onAnalyse={(rows, label) => replaceDataset(rows, label)}
+              />
+            )}
+            {view === "integrations" && (
+              <IntegrationsView
+                connections={connections}
+                onSynced={handleSynced}
               />
             )}
 

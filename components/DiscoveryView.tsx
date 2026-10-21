@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { BarChart3, ExternalLink, Loader2, Search } from "lucide-react";
-import { analyzeReviews } from "@/lib/analysis";
-import type { AnalysisResult } from "@/lib/analysis";
 
 interface Snippet {
   title: string;
@@ -15,7 +13,7 @@ interface Snippet {
 }
 
 interface DiscoveryViewProps {
-  onAnalyse: (analysis: AnalysisResult, label: string) => void;
+  onAnalyse: (rows: Array<Record<string, unknown>>, label: string) => void;
 }
 
 const DOMAINS = ["Amazon India", "Flipkart", "Myntra", "Blinkit", "Zepto", "Other public web"];
@@ -62,9 +60,9 @@ export function DiscoveryView({ onAnalyse }: DiscoveryViewProps) {
 
   const useAsReviews = () => {
     try {
-      const analysis = analyzeReviews(reviews);
+      if (reviews.length === 0) throw new Error("No results to analyse yet.");
       const label = `Web search: ${[brand, product].filter((x) => x.trim()).join(" ")} (${reviews.length} result pages)`;
-      onAnalyse(analysis, label);
+      onAnalyse(reviews, label);
     } catch (e) {
       setErrors([e instanceof Error ? e.message : "Could not analyse these results."]);
     }

@@ -6,7 +6,8 @@ export type ViewKey =
   | "products"
   | "reviews"
   | "upload"
-  | "discovery";
+  | "discovery"
+  | "integrations";
 
 export interface NavContext {
   product?: string;

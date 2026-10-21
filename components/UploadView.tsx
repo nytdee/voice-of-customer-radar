@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { Download, FileUp, Loader2, Sparkles } from "lucide-react";
 import { parseCsv } from "@/lib/csv";
-import { analyzeReviews } from "@/lib/analysis";
 import type { AnalysisResult } from "@/lib/analysis";
 import { SAMPLE_REVIEWS_CSV } from "@/lib/sampleData";
 import { applyAiTags, toTaggingRows, type AiTag } from "@/lib/tagging";
@@ -11,7 +10,7 @@ import { applyAiTags, toTaggingRows, type AiTag } from "@/lib/tagging";
 interface UploadViewProps {
   analysis: AnalysisResult | null;
   sourceLabel: string;
-  onLoaded: (analysis: AnalysisResult, label: string) => void;
+  onLoaded: (rows: Array<Record<string, unknown>>, label: string) => void;
 }
 
 export function UploadView({ analysis, sourceLabel, onLoaded }: UploadViewProps) {
@@ -61,8 +60,8 @@ export function UploadView({ analysis, sourceLabel, onLoaded }: UploadViewProps)
         }
       }
 
-      const result = analyzeReviews(rows);
-      onLoaded(result, label);
+      const newRows = rows;
+      onLoaded(newRows, label);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not analyse this file.");
     } finally {
