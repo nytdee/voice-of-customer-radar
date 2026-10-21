@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeReviews } from "@/lib/analysis";
 import type { AnalysisResult } from "@/lib/analysis";
+import { formatDateISO } from "@/lib/dates";
 
 export const runtime = "nodejs";
 
@@ -22,9 +23,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       ok: true,
       deduped_review_count: result.deduped_review_count,
       source_count: result.source_count,
-      anchor_date: result.anchor_date.toISOString(),
-      current_period: result.current_period.map((d) => d.toISOString()),
-      previous_period: result.previous_period.map((d) => d.toISOString()),
+      anchor_date: formatDateISO(result.anchor_date),
+      current_period: result.current_period.map(formatDateISO),
+      previous_period: result.previous_period.map(formatDateISO),
       overall_current: result.overall_current,
       overall_previous: result.overall_previous,
       issues: result.issues,

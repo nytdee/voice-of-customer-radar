@@ -1,4 +1,5 @@
 import { ISSUE_RULES } from "./taxonomy";
+import { todayISO } from "./dates";
 
 export interface TavilyResult {
   title: string;
@@ -177,7 +178,7 @@ export function resultsToReviewRows(
   product: string,
   brand?: string
 ): Array<Record<string, string>> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const seen = new Set<string>();
   const rows: Array<Record<string, string>> = [];
   const label = brand && brand.trim() ? `${brand.trim()} ${product.trim()}` : product.trim();

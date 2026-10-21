@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Star } from "lucide-react";
 import type { AnalysisResult } from "@/lib/analysis";
 import type { NavContext, ViewKey } from "@/lib/nav";
+import { formatDateISO } from "@/lib/dates";
 
 export function ProductsView({
   analysis,
@@ -154,7 +155,7 @@ export function ProductsView({
                           <div key={r.review_id} className="rounded-lg bg-slate-900/40 border border-white/5 p-2.5">
                             <div className="flex items-center justify-between text-[10px] text-slate-500">
                               <span>
-                                {r.review_date.toISOString().slice(0, 10)} · {r.platform}
+                                {formatDateISO(r.review_date)} · {r.platform}
                               </span>
                               <span>{r.rating}★</span>
                             </div>

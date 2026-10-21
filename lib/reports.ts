@@ -1,4 +1,5 @@
 import { ISSUE_RULES } from "./taxonomy";
+import { asDate, formatDateISO } from "./dates";
 import type {
   AnalysisResult,
   IssueRow,
@@ -15,10 +16,10 @@ function orderedProducts(analysis: AnalysisResult): ProductReport[] {
 export function renderMarkdownReport(analysis: AnalysisResult): string {
   const cs = analysis.overall_current;
   const ps = analysis.overall_previous;
-  const [start, end] = analysis.current_period;
-  const [pstart, pend] = analysis.previous_period;
+  const [start, end] = analysis.current_period.map(asDate);
+  const [pstart, pend] = analysis.previous_period.map(asDate);
 
-  const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+  const fmtDate = (d: Date) => formatDateISO(d);
   const fmtRating = (v: number | null) => (v === null ? "n/a" : String(v));
 
   const lines: string[] = [
@@ -117,9 +118,9 @@ export function renderMarkdownReport(analysis: AnalysisResult): string {
 export function renderHtmlReport(analysis: AnalysisResult): string {
   const cs = analysis.overall_current;
   const ps = analysis.overall_previous;
-  const [start, end] = analysis.current_period;
+  const [start, end] = analysis.current_period.map(asDate);
 
-  const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+  const fmtDate = (d: Date) => formatDateISO(d);
   const fmtRating = (v: number | null) => (v === null ? "—" : String(v));
 
   const productBlocks = orderedProducts(analysis)

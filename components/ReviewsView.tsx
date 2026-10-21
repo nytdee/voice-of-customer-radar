@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type { AnalysisResult } from "@/lib/analysis";
 import type { NavContext } from "@/lib/nav";
+import { formatDateISO } from "@/lib/dates";
 
 const PAGE_SIZE = 15;
 
@@ -194,9 +195,9 @@ export function ReviewsView({
             </thead>
             <tbody>
               {visible.map((r, idx) => (
-                <tr key={`${r.platform}-${r.review_id}-${r.review_date.toISOString()}-${idx}`} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                <tr key={`${r.platform}-${r.review_id}-${formatDateISO(r.review_date)}-${idx}`} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
                   <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-xs">
-                    {r.review_date.toISOString().slice(0, 10)}
+                    {formatDateISO(r.review_date)}
                   </td>
                   <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{r.product}</td>
                   <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-xs">{r.platform}</td>

@@ -6,6 +6,7 @@ import {
   RECOMMENDATIONS,
   REQUIRED_COLUMNS,
 } from "./taxonomy";
+import { formatDateISO } from "./dates";
 
 export interface RawReview {
   [key: string]: unknown;
@@ -158,7 +159,7 @@ export function normalizeColumns(input: RawReview[]): Review[] {
       const basis = [
         product.toLowerCase(),
         platform.toLowerCase(),
-        review_date.toISOString().slice(0, 10),
+        formatDateISO(review_date),
         String(rating),
         review_text.toLowerCase().replace(/\s+/g, " ").trim(),
       ].join("|");
